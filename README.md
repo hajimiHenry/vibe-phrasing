@@ -86,3 +86,7 @@ npx vite build
 ## 开发文档
 
 - 架构说明：[docs/architecture.md](docs/architecture.md)
+
+## 许可证
+
+MIT
