@@ -143,6 +143,21 @@ async function createMask() {
   renderPanel();
 }
 
+async function deleteMask(maskId: string) {
+  if (!state) {
+    return;
+  }
+  state = await remove<SessionState>(`/sessions/${state.id}/masks/${maskId}`);
+  if (activeMaskId === maskId) {
+    activeMaskId = state.masks[0]?.id ?? null;
+  }
+  if (adjustmentTarget.type === "mask" && adjustmentTarget.maskId === maskId) {
+    adjustmentTarget = activeMaskId ? { type: "mask", maskId: activeMaskId } : { type: "global" };
+  }
+  await refreshPreview();
+  renderPanel();
+}
+
 async function refreshPreview() {
   if (!state) {
     return;
@@ -442,6 +457,11 @@ function renderPanel() {
       renderPanel();
     });
   });
+  panel.querySelectorAll<HTMLButtonElement>("[data-delete-mask-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      void deleteMask(button.dataset.deleteMaskId!);
+    });
+  });
 }
 
 function maskRow(mask: SessionState["masks"][number]) {
@@ -451,7 +471,10 @@ function maskRow(mask: SessionState["masks"][number]) {
         <strong>${mask.name}</strong>
         <div class="muted">Opacity ${Math.round(mask.opacity * 100)}% · Feather ${mask.feather}px</div>
       </div>
-      <button class="button" data-mask-id="${mask.id}">Select</button>
+      <div class="mask-actions">
+        <button class="button" data-mask-id="${mask.id}">Select</button>
+        <button class="button danger" data-delete-mask-id="${mask.id}">Delete</button>
+      </div>
     </div>
   `;
 }
@@ -563,6 +586,16 @@ async function post<T>(path: string, body: unknown): Promise<T> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
+  });
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  return response.json() as Promise<T>;
+}
+
+async function remove<T>(path: string): Promise<T> {
+  const response = await fetch(`${apiBase}${path}`, {
+    method: "DELETE"
   });
   if (!response.ok) {
     throw new Error(await response.text());

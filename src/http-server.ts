@@ -99,6 +99,15 @@ app.post("/sessions/:sessionId/masks/:maskId/options", route((request, response)
   );
 }));
 
+app.delete("/sessions/:sessionId/masks/:maskId", route((request, response) => {
+  response.json(
+    imageEngine.deleteMaskLayer(
+      param(request, "sessionId"),
+      param(request, "maskId")
+    )
+  );
+}));
+
 app.post("/sessions/:sessionId/masks/:maskId/stroke", route((request, response) => {
   const body = z
     .object({

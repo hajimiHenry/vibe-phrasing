@@ -97,6 +97,19 @@ server.tool(
 );
 
 server.tool(
+  "delete_mask_layer",
+  "Delete a mask layer from the active shared session unless session_id is provided.",
+  {
+    session_id: z.string().min(1).optional(),
+    mask_id: z.string().min(1)
+  },
+  async ({ session_id, mask_id }) => {
+    const sessionId = await resolveSessionId(session_id);
+    return text(await apiDelete(`/sessions/${sessionId}/masks/${mask_id}`));
+  }
+);
+
+server.tool(
   "paint_mask_stroke",
   "Programmatically paint or erase a stroke on a mask layer using image coordinates.",
   {
@@ -192,6 +205,13 @@ async function apiPost<T = unknown>(route: string, body: unknown): Promise<T> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
+  });
+  return parseJsonResponse<T>(response);
+}
+
+async function apiDelete<T = unknown>(route: string): Promise<T> {
+  const response = await fetch(`${apiBase}${route}`, {
+    method: "DELETE"
   });
   return parseJsonResponse<T>(response);
 }

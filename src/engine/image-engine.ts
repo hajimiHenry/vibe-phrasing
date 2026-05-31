@@ -122,6 +122,17 @@ export class ImageEngine {
     return this.toPublicState(session);
   }
 
+  deleteMaskLayer(sessionId: string, maskId: string): SessionState {
+    const session = this.requireSession(sessionId);
+    const index = session.masks.findIndex((mask) => mask.id === maskId);
+    if (index < 0) {
+      throw new Error(`Unknown mask layer: ${maskId}`);
+    }
+    session.masks.splice(index, 1);
+    this.markUpdated(session);
+    return this.toPublicState(session);
+  }
+
   setMaskLayerOptions(
     sessionId: string,
     maskId: string,

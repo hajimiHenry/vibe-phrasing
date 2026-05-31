@@ -43,6 +43,7 @@ npm run dev:http
 - `apply_crop(session_id, rect)`
 - `create_mask_layer(session_id, name)`
 - `set_mask_layer_options(session_id, mask_id, ...)`
+- `delete_mask_layer(session_id, mask_id)`
 - `paint_mask_stroke(session_id, mask_id, points, brushSize, opacity, mode)`
 - `apply_adjustments(session_id, target, params)`
 - `render_preview(session_id, output_path, max_size)`

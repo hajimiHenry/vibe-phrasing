@@ -66,6 +66,12 @@ select {
   border-color: #d6f36a;
 }
 
+.button.danger {
+  border-color: #5c3439;
+  background: #2c171a;
+  color: #ffb8bf;
+}
+
 .segmented {
   display: inline-flex;
   gap: 0;
@@ -214,6 +220,11 @@ canvas {
 
 .mask-row.active {
   border-color: #d6f36a;
+}
+
+.mask-actions {
+  display: inline-flex;
+  gap: 6px;
 }
 
 .status {
