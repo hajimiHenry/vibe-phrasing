@@ -199,6 +199,48 @@ export class ImageEngine {
       .toBuffer();
   }
 
+  async renderMaskOverlay(
+    sessionId: string,
+    maskId: string,
+    maxSize = 1400
+  ): Promise<Buffer> {
+    const session = this.requireSession(sessionId);
+    const layer = this.requireMask(sessionId, maskId);
+    const crop = session.crop ?? {
+      x: 0,
+      y: 0,
+      width: session.width,
+      height: session.height,
+      feather: 0
+    };
+    const scale =
+      Number.isFinite(maxSize) && Math.max(crop.width, crop.height) > maxSize
+        ? maxSize / Math.max(crop.width, crop.height)
+        : 1;
+    const outWidth = Math.max(1, Math.round(crop.width * scale));
+    const outHeight = Math.max(1, Math.round(crop.height * scale));
+    const alpha = await this.renderMaskForView(session, layer, crop, outWidth, outHeight);
+    const overlay = new Uint8Array(outWidth * outHeight * 4);
+
+    for (let i = 0; i < alpha.length; i += 1) {
+      const outputIndex = i * 4;
+      overlay[outputIndex] = 255;
+      overlay[outputIndex + 1] = 42;
+      overlay[outputIndex + 2] = 52;
+      overlay[outputIndex + 3] = Math.round(alpha[i]! * 0.48);
+    }
+
+    return sharp(overlay, {
+      raw: {
+        width: outWidth,
+        height: outHeight,
+        channels: 4
+      }
+    })
+      .png()
+      .toBuffer();
+  }
+
   async exportJpeg(
     sessionId: string,
     outputPath: string,

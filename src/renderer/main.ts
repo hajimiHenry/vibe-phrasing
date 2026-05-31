@@ -27,6 +27,7 @@ let mode: ToolMode = "mask";
 let activeMaskId: string | null = null;
 let adjustmentTarget: AdjustmentTarget = { type: "global" };
 let previewBitmap: ImageBitmap | null = null;
+let maskOverlayBitmap: ImageBitmap | null = null;
 let cropStart: PaintPoint | null = null;
 let cropCurrent: PaintPoint | null = null;
 let painting = false;
@@ -34,6 +35,7 @@ let lastPaintPoint: PaintPoint | null = null;
 let brushMode: "add" | "erase" = "add";
 let brushSize = 80;
 let brushOpacity = 0.85;
+let showMaskOverlay = true;
 let renderToken = 0;
 
 renderShell();
@@ -158,9 +160,26 @@ async function refreshPreview() {
   }
   previewBitmap?.close();
   previewBitmap = bitmap;
+  await refreshMaskOverlay();
   drawCanvas();
   document.querySelector<HTMLCanvasElement>("#canvas")!.hidden = false;
   document.querySelector<HTMLDivElement>("#empty")!.hidden = true;
+}
+
+async function refreshMaskOverlay() {
+  maskOverlayBitmap?.close();
+  maskOverlayBitmap = null;
+  if (!state || !activeMaskId || !showMaskOverlay) {
+    return;
+  }
+  const response = await fetch(
+    `${apiBase}/sessions/${state.id}/masks/${activeMaskId}/overlay?max=1400&t=${Date.now()}`
+  );
+  if (!response.ok) {
+    return;
+  }
+  const blob = await response.blob();
+  maskOverlayBitmap = await createImageBitmap(blob);
 }
 
 async function syncActiveSession() {
@@ -200,6 +219,9 @@ function drawCanvas() {
   canvas.height = previewBitmap.height;
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.drawImage(previewBitmap, 0, 0);
+  if (maskOverlayBitmap && showMaskOverlay) {
+    context.drawImage(maskOverlayBitmap, 0, 0, canvas.width, canvas.height);
+  }
 
   if (mode === "crop" && cropStart && cropCurrent) {
     const left = Math.min(cropStart.x, cropCurrent.x);
@@ -335,6 +357,10 @@ function renderPanel() {
     <div class="section">
       <h2>Masks</h2>
       <button id="add-mask" class="button primary">Add Mask</button>
+      <label class="checkbox-row">
+        <input id="show-mask-overlay" type="checkbox" ${showMaskOverlay ? "checked" : ""}>
+        <span>Show red mask overlay</span>
+      </label>
       <div class="field">
         <label><span>Brush size</span><span>${brushSize}px</span></label>
         <input id="brush-size" type="range" min="4" max="240" value="${brushSize}">
@@ -381,6 +407,12 @@ function renderPanel() {
     renderPanel();
   });
   panel.querySelector<HTMLButtonElement>("#add-mask")!.addEventListener("click", createMask);
+  panel.querySelector<HTMLInputElement>("#show-mask-overlay")!.addEventListener("change", async (event) => {
+    showMaskOverlay = (event.target as HTMLInputElement).checked;
+    await refreshMaskOverlay();
+    drawCanvas();
+    renderPanel();
+  });
   panel.querySelector<HTMLInputElement>("#brush-size")!.addEventListener("input", (event) => {
     brushSize = Number((event.target as HTMLInputElement).value);
     renderPanel();
@@ -406,6 +438,7 @@ function renderPanel() {
     button.addEventListener("click", () => {
       activeMaskId = button.dataset.maskId!;
       adjustmentTarget = { type: "mask", maskId: activeMaskId };
+      void refreshMaskOverlay().then(drawCanvas);
       renderPanel();
     });
   });

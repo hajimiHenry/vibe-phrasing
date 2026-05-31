@@ -181,6 +181,21 @@ canvas {
   padding: 0 8px;
 }
 
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 12px;
+  color: #cbd3da;
+  font-size: 12px;
+}
+
+.checkbox-row input {
+  width: 16px;
+  height: 16px;
+  accent-color: #d6f36a;
+}
+
 .mask-list {
   display: grid;
   gap: 8px;

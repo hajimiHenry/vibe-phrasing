@@ -8,6 +8,8 @@ dist/
 
 vibe-preview-*.jpg
 vibe-preview-*.jpeg
+current-editor-export.jpg
+exports/
 *.local
 
 .DS_Store

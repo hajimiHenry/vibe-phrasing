@@ -139,6 +139,16 @@ app.get("/sessions/:sessionId/preview", asyncRoute(async (request, response) => 
   response.type("image/jpeg").send(buffer);
 }));
 
+app.get("/sessions/:sessionId/masks/:maskId/overlay", asyncRoute(async (request, response) => {
+  const maxSize = Number(request.query.max ?? 1400);
+  const buffer = await imageEngine.renderMaskOverlay(
+    param(request, "sessionId"),
+    param(request, "maskId"),
+    maxSize
+  );
+  response.type("image/png").send(buffer);
+}));
+
 app.post("/sessions/:sessionId/export", asyncRoute(async (request, response) => {
   const body = z
     .object({
