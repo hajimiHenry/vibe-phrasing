@@ -28,6 +28,7 @@ let activeMaskId: string | null = null;
 let adjustmentTarget: AdjustmentTarget = { type: "global" };
 let previewBitmap: ImageBitmap | null = null;
 let maskOverlayBitmap: ImageBitmap | null = null;
+let brushPreviewPoint: PaintPoint | null = null;
 let cropStart: PaintPoint | null = null;
 let cropCurrent: PaintPoint | null = null;
 let painting = false;
@@ -84,7 +85,7 @@ function renderShell() {
   canvas.addEventListener("pointerdown", onPointerDown);
   canvas.addEventListener("pointermove", onPointerMove);
   canvas.addEventListener("pointerup", onPointerUp);
-  canvas.addEventListener("pointerleave", onPointerUp);
+  canvas.addEventListener("pointerleave", onPointerLeave);
   renderPanel();
 }
 
@@ -252,6 +253,10 @@ function drawCanvas() {
     context.strokeRect(left + 0.5, top + 0.5, width, height);
     context.restore();
   }
+
+  if (mode === "mask" && brushPreviewPoint) {
+    drawBrushPreview(context, canvas);
+  }
 }
 
 function onPointerDown(event: PointerEvent) {
@@ -260,6 +265,7 @@ function onPointerDown(event: PointerEvent) {
   }
   getCanvas().setPointerCapture(event.pointerId);
   const point = canvasPoint(event);
+  brushPreviewPoint = point;
   if (mode === "crop") {
     cropStart = point;
     cropCurrent = point;
@@ -278,6 +284,7 @@ function onPointerMove(event: PointerEvent) {
     return;
   }
   const point = canvasPoint(event);
+  brushPreviewPoint = point;
   if (mode === "crop" && cropStart) {
     cropCurrent = point;
     drawCanvas();
@@ -312,6 +319,12 @@ function onPointerUp() {
     lastPaintPoint = null;
     void refreshPreview();
   }
+}
+
+function onPointerLeave() {
+  brushPreviewPoint = null;
+  onPointerUp();
+  drawCanvas();
 }
 
 function startPainting(point: PaintPoint) {
@@ -349,6 +362,7 @@ function setMode(next: ToolMode) {
   document.querySelector<HTMLButtonElement>("#tool-mask")!.classList.toggle("active", mode === "mask");
   document.querySelector<HTMLButtonElement>("#tool-crop")!.classList.toggle("active", mode === "crop");
   resetPointerState();
+  brushPreviewPoint = null;
   drawCanvas();
 }
 
@@ -430,6 +444,7 @@ function renderPanel() {
   });
   panel.querySelector<HTMLInputElement>("#brush-size")!.addEventListener("input", (event) => {
     brushSize = Number((event.target as HTMLInputElement).value);
+    drawCanvas();
     renderPanel();
   });
   panel.querySelector<HTMLInputElement>("#brush-opacity")!.addEventListener("input", (event) => {
@@ -493,6 +508,41 @@ function slider(
       <input data-adjustment="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${value}">
     </div>
   `;
+}
+
+function drawBrushPreview(context: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+  if (!state || !brushPreviewPoint) {
+    return;
+  }
+  const crop = state.crop ?? {
+    x: 0,
+    y: 0,
+    width: state.width,
+    height: state.height
+  };
+  const scaleX = canvas.width / crop.width;
+  const scaleY = canvas.height / crop.height;
+  const radius = Math.max(2, (brushSize / 2) * Math.min(scaleX, scaleY));
+
+  context.save();
+  context.beginPath();
+  context.arc(brushPreviewPoint.x, brushPreviewPoint.y, radius, 0, Math.PI * 2);
+  context.fillStyle = "rgba(255, 24, 36, 0.12)";
+  context.fill();
+  context.lineWidth = 2;
+  context.strokeStyle = "rgba(255, 255, 255, 0.92)";
+  context.shadowColor = "rgba(0, 0, 0, 0.85)";
+  context.shadowBlur = 4;
+  context.stroke();
+  context.shadowBlur = 0;
+  context.setLineDash([6, 4]);
+  context.strokeStyle = "rgba(255, 24, 36, 0.95)";
+  context.stroke();
+  context.beginPath();
+  context.arc(brushPreviewPoint.x, brushPreviewPoint.y, 2.5, 0, Math.PI * 2);
+  context.fillStyle = "rgba(255, 255, 255, 0.96)";
+  context.fill();
+  context.restore();
 }
 
 async function updateAdjustment(key: keyof AdjustmentParams, value: number) {

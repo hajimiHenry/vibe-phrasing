@@ -236,9 +236,9 @@ export class ImageEngine {
     for (let i = 0; i < alpha.length; i += 1) {
       const outputIndex = i * 4;
       overlay[outputIndex] = 255;
-      overlay[outputIndex + 1] = 42;
-      overlay[outputIndex + 2] = 52;
-      overlay[outputIndex + 3] = Math.round(alpha[i]! * 0.48);
+      overlay[outputIndex + 1] = 24;
+      overlay[outputIndex + 2] = 36;
+      overlay[outputIndex + 3] = Math.round(alpha[i]! * 0.68);
     }
 
     return sharp(overlay, {

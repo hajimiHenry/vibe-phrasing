@@ -121,6 +121,7 @@ canvas {
   border: 1px solid #30363d;
   background: #0c0f12;
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.36);
+  cursor: crosshair;
 }
 
 .empty {
