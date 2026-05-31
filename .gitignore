@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.vite/
+
+*.log
+*.tmp
+*.temp
+
+vibe-preview-*.jpg
+vibe-preview-*.jpeg
+*.local
+
+.DS_Store
+Thumbs.db
