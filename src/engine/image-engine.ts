@@ -34,12 +34,15 @@ type InternalSession = {
 
 export class ImageEngine {
   private sessions = new Map<string, InternalSession>();
+  // HTTP 服务是 Electron 和 MCP 共享的唯一状态源。
+  // MCP 工具省略 session_id 时会默认操作这个 active session。
   private activeSessionId: string | null = null;
 
   async openImage(sourcePath: string): Promise<SessionState> {
     const resolved = path.resolve(sourcePath);
     await fs.access(resolved);
 
+    // 导入时统一解码成 RGBA，预览、蒙版和导出都基于同一份像素。
     const image = sharp(resolved, { failOn: "none" }).rotate().ensureAlpha();
     const { data, info } = await image
       .raw()
@@ -230,6 +233,7 @@ export class ImageEngine {
         : 1;
     const outWidth = Math.max(1, Math.round(crop.width * scale));
     const outHeight = Math.max(1, Math.round(crop.height * scale));
+    // 红色覆盖层只用于 UI 显示，不参与最终导出。
     const alpha = await this.renderMaskForView(session, layer, crop, outWidth, outHeight);
     const overlay = new Uint8Array(outWidth * outHeight * 4);
 
@@ -291,6 +295,7 @@ export class ImageEngine {
     const outWidth = Math.max(1, Math.round(crop.width * scale));
     const outHeight = Math.max(1, Math.round(crop.height * scale));
     const output = new Uint8Array(outWidth * outHeight * 4);
+    // 先把所有 mask alpha 渲染到当前预览/导出尺寸，避免逐像素时重复缩放。
     const masks = await Promise.all(
       session.masks.map(async (layer) => ({
         layer,
@@ -352,6 +357,7 @@ export class ImageEngine {
     outWidth: number,
     outHeight: number
   ): Promise<Uint8Array> {
+    // mask 以原图尺寸保存；裁切、羽化和缩放在显示/导出时统一处理。
     let pipeline = sharp(layer.mask, {
       raw: { width: session.width, height: session.height, channels: 1 }
     });
@@ -382,6 +388,7 @@ export class ImageEngine {
   ): void {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
+    // 沿移动路径连续盖圆，避免鼠标移动太快时笔触断裂。
     const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / Math.max(1, radius / 2)));
     for (let step = 0; step <= steps; step += 1) {
       const t = step / steps;
@@ -463,6 +470,7 @@ export class ImageEngine {
   }
 
   private markUpdated(session: InternalSession): void {
+    // Electron UI 通过 revision 判断 MCP/AI 是否改动了当前图片。
     session.revision += 1;
     this.activeSessionId = session.id;
   }

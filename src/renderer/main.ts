@@ -163,6 +163,7 @@ async function refreshPreview() {
   if (!state) {
     return;
   }
+  // 滑杆拖动会产生并发预览请求；只保留最后一次响应。
   const token = ++renderToken;
   const response = await fetch(`${apiBase}/sessions/${state.id}/preview?max=1400&t=${Date.now()}`);
   if (!response.ok) {
@@ -203,6 +204,7 @@ async function syncActiveSession() {
     return;
   }
   try {
+    // 轮询 active session，让 AI 通过 MCP 做的修改能同步显示到 GUI。
     const active = await get<SessionState>("/sessions/active");
     if (state?.id === active.id && state.revision === active.revision) {
       return;
@@ -520,6 +522,7 @@ function drawBrushPreview(context: CanvasRenderingContext2D, canvas: HTMLCanvasE
     width: state.width,
     height: state.height
   };
+  // 画笔大小以原图像素为单位保存，这里换算成当前预览画布上的半径。
   const scaleX = canvas.width / crop.width;
   const scaleY = canvas.height / crop.height;
   const radius = Math.max(2, (brushSize / 2) * Math.min(scaleX, scaleY));

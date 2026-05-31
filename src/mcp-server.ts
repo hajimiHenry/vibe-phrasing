@@ -7,6 +7,8 @@ import { z } from "zod";
 
 const apiBase = process.env.VIBE_IMAGE_EDITOR_API ?? "http://127.0.0.1:43110";
 
+// MCP server 不直接持有 ImageEngine；它只是共享 HTTP 服务外面的一层工具 facade。
+// 这样 AI 的工具调用和人的 GUI 操作都会落到同一个编辑状态上。
 const adjustmentPatchSchema = {
   exposure: z.number().min(-3).max(3).optional(),
   contrast: z.number().min(-100).max(100).optional(),
@@ -191,6 +193,7 @@ async function resolveSessionId(sessionId: string | undefined): Promise<string> 
   if (sessionId) {
     return sessionId;
   }
+  // 大多数工具默认操作 Electron 当前打开的 active session。
   const active = await apiGet<{ id: string }>("/sessions/active");
   return active.id;
 }

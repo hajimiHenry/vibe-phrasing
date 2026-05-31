@@ -35,6 +35,7 @@ export function applyAdjustmentsToRgb(
   b: number,
   params: AdjustmentParams
 ): [number, number, number] {
+  // MVP 阶段的 RGB 调色模型。保持参数化和确定性，方便 AI 修改后回看、微调和撤换。
   let nr = r / 255;
   let ng = g / 255;
   let nb = b / 255;
