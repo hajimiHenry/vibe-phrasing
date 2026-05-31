@@ -1,66 +1,69 @@
-# Vibe Image Editor Prototype
+# Vibe 图像编辑器原型
 
-JPEG-first prototype for an MCP-driven local image editor.
+这是一个 JPEG-first 的本地图像编辑原型，目标是让人和 AI 在同一张图片、同一个编辑状态上协作。
 
-## What is implemented
+## 已实现
 
-- Local MCP server exposing image-editing tools over stdio.
-- Local HTTP API used by both the Electron UI and the MCP server.
-- Shared in-memory non-destructive sessions with an active session.
-- JPEG import, preview rendering, crop, mask layers, brush painting, global/local adjustments, and JPEG export.
-- Adjustment parameters are structured so Claude Code, Codex, or another MCP client can translate natural language into tool calls.
+- 本地 Electron 编辑窗口。
+- 本地 HTTP 图像编辑服务，Electron UI 和 MCP server 共用同一个 active session。
+- MCP server，供 Codex / Claude Code 这类客户端通过工具调用控制图片。
+- JPEG 导入、裁切、蒙版图层、画笔添加/擦除、全局/局部调色、预览渲染、JPEG 导出。
+- 选中蒙版时显示类似 Lightroom 的红色半透明蒙版覆盖层。
+- 调色参数是结构化对象，方便 AI 把自然语言审美描述翻译成参数 diff。
 
-## Run
+## 启动
 
-Install dependencies:
+安装依赖：
 
 ```bash
 npm install
 ```
 
-Start the Electron editor:
+启动 Electron 编辑器：
 
 ```bash
 npm run dev
 ```
 
-Run only the MCP server:
+只启动 MCP server：
 
 ```bash
 npm run dev:mcp
 ```
 
-Run only the HTTP API:
+只启动本地 HTTP API：
 
 ```bash
 npm run dev:http
 ```
 
-## MCP tools
+## MCP 工具
 
 - `open_image(path)`
-- `get_session_state(session_id)`
-- `apply_crop(session_id, rect)`
-- `create_mask_layer(session_id, name)`
-- `set_mask_layer_options(session_id, mask_id, ...)`
-- `delete_mask_layer(session_id, mask_id)`
-- `paint_mask_stroke(session_id, mask_id, points, brushSize, opacity, mode)`
-- `apply_adjustments(session_id, target, params)`
-- `render_preview(session_id, output_path, max_size)`
-- `export_jpeg(session_id, output_path, quality)`
+- `get_session_state(session_id?)`
+- `activate_session(session_id)`
+- `apply_crop(session_id?, rect)`
+- `create_mask_layer(session_id?, name)`
+- `set_mask_layer_options(session_id?, mask_id, ...)`
+- `delete_mask_layer(session_id?, mask_id)`
+- `paint_mask_stroke(session_id?, mask_id, points, brushSize, opacity, mode)`
+- `apply_adjustments(session_id?, target, params)`
+- `render_preview(session_id?, output_path?, max_size?)`
+- `export_jpeg(session_id?, output_path, quality)`
 
-Most MCP tools accept an optional `session_id`. If omitted, they operate on the active image currently shared with the Electron UI.
+大多数 MCP 工具的 `session_id` 都可以省略。省略时默认操作 Electron 当前打开的 active session。
 
-## Development checks
+## 开发检查
 
 ```bash
 npm run typecheck
 npm run smoke
+npx vite build
 ```
 
-## Current boundaries
+## 当前边界
 
-- Input is JPEG only.
-- Sessions are in memory and reset when the server exits.
-- Semantic segmentation is intentionally not implemented yet; the MCP/API surface leaves room for a future provider.
-- The Electron UI owns manual crop and brush interaction; MCP clients own natural-language orchestration against the same shared session.
+- 输入格式只支持 JPEG。
+- session 保存在内存里，服务退出后会丢失。
+- 语义分割还没有接入真实 AI provider；当前先提供蒙版图层和画笔接口。
+- RAW 解码后续会作为 image IO adapter 接入，不改变现有编辑模型。

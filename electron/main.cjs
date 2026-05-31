@@ -16,7 +16,7 @@ async function createWindow() {
     height: 840,
     minWidth: 960,
     minHeight: 680,
-    title: "Vibe Image Editor",
+    title: "Vibe 图像编辑器",
     backgroundColor: "#111315",
     center: true,
     show: false,
@@ -52,9 +52,9 @@ ipcMain.handle("dialog:openImage", async () => {
     mainWindow.focus();
   }
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: "Open JPEG",
+    title: "打开 JPEG",
     properties: ["openFile"],
-    filters: [{ name: "JPEG Images", extensions: ["jpg", "jpeg"] }]
+    filters: [{ name: "JPEG 图片", extensions: ["jpg", "jpeg"] }]
   });
   if (result.canceled || result.filePaths.length === 0) {
     return null;
@@ -67,9 +67,9 @@ ipcMain.handle("dialog:saveJpeg", async () => {
     mainWindow.focus();
   }
   const result = await dialog.showSaveDialog(mainWindow, {
-    title: "Export JPEG",
+    title: "导出 JPEG",
     defaultPath: "edited.jpg",
-    filters: [{ name: "JPEG Images", extensions: ["jpg", "jpeg"] }]
+    filters: [{ name: "JPEG 图片", extensions: ["jpg", "jpeg"] }]
   });
   if (result.canceled || !result.filePath) {
     return null;
@@ -79,7 +79,7 @@ ipcMain.handle("dialog:saveJpeg", async () => {
 
 app.whenReady().then(createWindow).catch((error) => {
   console.error(error);
-  dialog.showErrorBox("Vibe Image Editor failed to start", error.message || String(error));
+  dialog.showErrorBox("Vibe 图像编辑器启动失败", error.message || String(error));
   app.quit();
 });
 

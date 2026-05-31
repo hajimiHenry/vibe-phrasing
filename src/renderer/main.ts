@@ -44,30 +44,30 @@ window.setInterval(() => {
 }, 1000);
 
 window.addEventListener("error", (event) => {
-  setStatus(`Error: ${event.message}`);
+  setStatus(`错误：${event.message}`);
 });
 
 window.addEventListener("unhandledrejection", (event) => {
   const reason = event.reason instanceof Error ? event.reason.message : String(event.reason);
-  setStatus(`Error: ${reason}`);
+  setStatus(`错误：${reason}`);
 });
 
 function renderShell() {
   app.innerHTML = `
     <div class="app">
       <div class="toolbar">
-        <button id="open" class="button primary">Open JPEG</button>
-        <button id="export" class="button">Export</button>
+        <button id="open" class="button primary">打开 JPEG</button>
+        <button id="export" class="button">导出</button>
         <div class="segmented" role="group">
-          <button id="tool-mask" class="active">Mask</button>
-          <button id="tool-crop">Crop</button>
+          <button id="tool-mask" class="active">蒙版</button>
+          <button id="tool-crop">裁切</button>
         </div>
         <div class="spacer"></div>
-        <div id="status" class="status">No image loaded</div>
+        <div id="status" class="status">未打开图片</div>
       </div>
       <main class="workspace">
         <div id="empty" class="empty">
-          <div>Open a JPEG to start editing.</div>
+          <div>打开一张 JPEG 开始编辑。</div>
         </div>
         <canvas id="canvas" hidden></canvas>
       </main>
@@ -91,14 +91,14 @@ function renderShell() {
 async function openImage() {
   try {
     if (!window.editorApi?.openImage) {
-      throw new Error("Electron preload is not available. Start the app with npm run dev.");
+      throw new Error("Electron preload 不可用。请用 npm run dev 启动应用。");
     }
     const path = await window.editorApi.openImage();
     if (!path) {
-      setStatus("Open canceled");
+      setStatus("已取消打开");
       return;
     }
-    setStatus("Opening image...");
+    setStatus("正在打开图片...");
     state = await post<SessionState>("/sessions/open", { path });
     activeMaskId = state.masks[0]?.id ?? null;
     adjustmentTarget = { type: "global" };
@@ -106,7 +106,7 @@ async function openImage() {
     renderPanel();
     setStatus(path);
   } catch (error) {
-    setStatus(`Open failed: ${error instanceof Error ? error.message : String(error)}`);
+    setStatus(`打开失败：${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -116,18 +116,18 @@ async function exportImage() {
   }
   try {
     if (!window.editorApi?.saveJpeg) {
-      throw new Error("Electron preload is not available. Start the app with npm run dev.");
+      throw new Error("Electron preload 不可用。请用 npm run dev 启动应用。");
     }
     const outputPath = await window.editorApi.saveJpeg();
     if (!outputPath) {
-      setStatus("Export canceled");
+      setStatus("已取消导出");
       return;
     }
-    setStatus("Exporting JPEG...");
+    setStatus("正在导出 JPEG...");
     await post(`/sessions/${state.id}/export`, { outputPath, quality: 92 });
-    setStatus(`Exported ${outputPath}`);
+    setStatus(`已导出：${outputPath}`);
   } catch (error) {
-    setStatus(`Export failed: ${error instanceof Error ? error.message : String(error)}`);
+    setStatus(`导出失败：${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -136,7 +136,7 @@ async function createMask() {
     return;
   }
   state = await post<SessionState>(`/sessions/${state.id}/masks`, {
-    name: `Mask ${state.masks.length + 1}`
+    name: `蒙版 ${state.masks.length + 1}`
   });
   activeMaskId = state.masks.at(-1)?.id ?? null;
   adjustmentTarget = activeMaskId ? { type: "mask", maskId: activeMaskId } : { type: "global" };
@@ -218,7 +218,7 @@ async function syncActiveSession() {
     }
     await refreshPreview();
     renderPanel();
-    setStatus(previousId === active.id ? "Synced AI edit" : active.sourcePath);
+    setStatus(previousId === active.id ? "已同步 AI 编辑" : active.sourcePath);
   } catch {
     // No active session yet, or the API is temporarily unavailable during startup.
   }
@@ -355,7 +355,7 @@ function setMode(next: ToolMode) {
 function renderPanel() {
   const panel = document.querySelector<HTMLDivElement>("#panel")!;
   if (!state) {
-    panel.innerHTML = `<div class="section"><h2>Session</h2><div class="muted">Open a JPEG to create a session.</div></div>`;
+    panel.innerHTML = `<div class="section"><h2>会话</h2><div class="muted">打开一张 JPEG 后会创建共享编辑会话。</div></div>`;
     return;
   }
 
@@ -364,55 +364,55 @@ function renderPanel() {
     adjustmentTarget.type === "mask" ? adjustmentTarget.maskId : null;
   panel.innerHTML = `
     <div class="section">
-      <h2>Image</h2>
+      <h2>图片</h2>
       <div class="muted">${state.width} x ${state.height}px</div>
-      <div class="muted">${state.crop ? `Crop: ${state.crop.width} x ${state.crop.height}` : "No crop"}</div>
-      <button id="clear-crop" class="button">Clear Crop</button>
+      <div class="muted">${state.crop ? `裁切：${state.crop.width} x ${state.crop.height}` : "未裁切"}</div>
+      <button id="clear-crop" class="button">清除裁切</button>
     </div>
     <div class="section">
-      <h2>Masks</h2>
-      <button id="add-mask" class="button primary">Add Mask</button>
+      <h2>蒙版</h2>
+      <button id="add-mask" class="button primary">添加蒙版</button>
       <label class="checkbox-row">
         <input id="show-mask-overlay" type="checkbox" ${showMaskOverlay ? "checked" : ""}>
-        <span>Show red mask overlay</span>
+        <span>显示红色蒙版覆盖层</span>
       </label>
       <div class="field">
-        <label><span>Brush size</span><span>${brushSize}px</span></label>
+        <label><span>画笔大小</span><span>${brushSize}px</span></label>
         <input id="brush-size" type="range" min="4" max="240" value="${brushSize}">
       </div>
       <div class="field">
-        <label><span>Brush opacity</span><span>${Math.round(brushOpacity * 100)}%</span></label>
+        <label><span>画笔不透明度</span><span>${Math.round(brushOpacity * 100)}%</span></label>
         <input id="brush-opacity" type="range" min="0.05" max="1" step="0.05" value="${brushOpacity}">
       </div>
       <div class="field">
-        <label>Brush mode</label>
+        <label>画笔模式</label>
         <select id="brush-mode">
-          <option value="add" ${brushMode === "add" ? "selected" : ""}>Add</option>
-          <option value="erase" ${brushMode === "erase" ? "selected" : ""}>Erase</option>
+          <option value="add" ${brushMode === "add" ? "selected" : ""}>添加</option>
+          <option value="erase" ${brushMode === "erase" ? "selected" : ""}>擦除</option>
         </select>
       </div>
       <div class="mask-list">
-        ${state.masks.map(maskRow).join("") || `<div class="muted">No masks yet.</div>`}
+        ${state.masks.map(maskRow).join("") || `<div class="muted">还没有蒙版。</div>`}
       </div>
     </div>
     <div class="section">
-      <h2>Adjustments</h2>
+      <h2>调色</h2>
       <div class="field">
-        <label>Target</label>
+        <label>作用目标</label>
         <select id="target">
-          <option value="global" ${adjustmentTarget.type === "global" ? "selected" : ""}>Global</option>
+          <option value="global" ${adjustmentTarget.type === "global" ? "selected" : ""}>全局</option>
           ${state.masks.map((mask) => `<option value="${mask.id}" ${selectedMaskId === mask.id ? "selected" : ""}>${mask.name}</option>`).join("")}
         </select>
       </div>
-      ${slider("exposure", "Exposure", targetParams.exposure, -3, 3, 0.05)}
-      ${slider("contrast", "Contrast", targetParams.contrast, -100, 100, 1)}
-      ${slider("saturation", "Saturation", targetParams.saturation, -100, 100, 1)}
-      ${slider("temperature", "Temperature", targetParams.temperature, -100, 100, 1)}
-      ${slider("tint", "Tint", targetParams.tint, -100, 100, 1)}
-      ${slider("highlights", "Highlights", targetParams.highlights, -100, 100, 1)}
-      ${slider("shadows", "Shadows", targetParams.shadows, -100, 100, 1)}
-      ${slider("blacks", "Blacks", targetParams.blacks, -100, 100, 1)}
-      ${slider("whites", "Whites", targetParams.whites, -100, 100, 1)}
+      ${slider("exposure", "曝光", targetParams.exposure, -3, 3, 0.05)}
+      ${slider("contrast", "对比度", targetParams.contrast, -100, 100, 1)}
+      ${slider("saturation", "饱和度", targetParams.saturation, -100, 100, 1)}
+      ${slider("temperature", "色温", targetParams.temperature, -100, 100, 1)}
+      ${slider("tint", "色调", targetParams.tint, -100, 100, 1)}
+      ${slider("highlights", "高光", targetParams.highlights, -100, 100, 1)}
+      ${slider("shadows", "阴影", targetParams.shadows, -100, 100, 1)}
+      ${slider("blacks", "黑色色阶", targetParams.blacks, -100, 100, 1)}
+      ${slider("whites", "白色色阶", targetParams.whites, -100, 100, 1)}
     </div>
   `;
 
@@ -469,11 +469,11 @@ function maskRow(mask: SessionState["masks"][number]) {
     <div class="mask-row ${activeMaskId === mask.id ? "active" : ""}">
       <div>
         <strong>${mask.name}</strong>
-        <div class="muted">Opacity ${Math.round(mask.opacity * 100)}% · Feather ${mask.feather}px</div>
+        <div class="muted">不透明度 ${Math.round(mask.opacity * 100)}% · 羽化 ${mask.feather}px</div>
       </div>
       <div class="mask-actions">
-        <button class="button" data-mask-id="${mask.id}">Select</button>
-        <button class="button danger" data-delete-mask-id="${mask.id}">Delete</button>
+        <button class="button" data-mask-id="${mask.id}">选择</button>
+        <button class="button danger" data-delete-mask-id="${mask.id}">删除</button>
       </div>
     </div>
   `;
